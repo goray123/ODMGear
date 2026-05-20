@@ -32,8 +32,10 @@ public class PlayerController : MonoBehaviour
 
     private Vector2 moveInput;
     private Vector2 lookInput;
+    private bool jumpHeld;
 
     public Rigidbody Rigidbody => rigid;
+    public bool IsRopeLengthLockHeld => jumpHeld;
 
     private float pitch;
     private bool isGrounded;
@@ -53,6 +55,8 @@ public class PlayerController : MonoBehaviour
     {
         RotateCamera();
         CheckGround();
+        jumpHeld = Keyboard.current.spaceKey.isPressed;
+        Debug.DrawRay(transform.position, rigid.linearVelocity, Color.red);
     }
 
     private void FixedUpdate()
@@ -74,8 +78,13 @@ public class PlayerController : MonoBehaviour
         lookInput = value.Get<Vector2>();
     }
 
-    public void OnJump()
+    public void OnJump(InputValue value)
     {
+        Debug.Log(jumpHeld);
+
+        if (!jumpHeld)
+            return;
+
         if (!isGrounded)
             return;
 
@@ -88,7 +97,8 @@ public class PlayerController : MonoBehaviour
     {   
         Debug.Log("Firing gear!");
         Vector3 fireDirection = cameraPivot.forward;
-        Vector3 fireOrigin = transform.position + Vector3.up * 1.2f + fireDirection * 0.6f;
+        Vector3 fireOrigin = transform.position + Vector3.up * 3.5f;
+        // + Vector3.up * 1.2f + fireDirection * 0.6f
 
         gearManager.FireGear(fireOrigin, fireDirection, this);
     }
@@ -98,7 +108,9 @@ public class PlayerController : MonoBehaviour
     // =========================
 
     private void Move()
-    {
+    {   
+        // if (moveInput.sqrMagnitude < 0.01f) return;
+
         Vector3 moveDirection =
             transform.forward * moveInput.y +
             transform.right * moveInput.x;
@@ -108,12 +120,12 @@ public class PlayerController : MonoBehaviour
 
         Vector3 velocity = moveDirection * moveSpeed;
 
-        rigid.linearVelocity = new Vector3(
-            velocity.x,
-            rigid.linearVelocity.y,
-            velocity.z
-        );
-        // rigid.AddForce(velocity * maxSpeed, ForceMode.Impulse);
+        // rigid.linearVelocity = new Vector3(
+        //     velocity.x,
+        //     rigid.linearVelocity.y,
+        //     velocity.z
+        // );
+        rigid.AddForce(velocity);
         // if (rigid.linearVelocity.magnitude > maxSpeed)
         // {
         //     rigid.linearVelocity = rigid.linearVelocity.normalized * maxSpeed;

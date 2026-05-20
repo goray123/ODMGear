@@ -14,6 +14,8 @@ public class GearBehaviour : MonoBehaviour
     private PlayerController owner;
     private bool anchored;
     private Vector3 anchorPoint;
+    private bool ropeLengthLocked;
+    private float lockedRopeLength;
 
     private void Awake()
     {
@@ -27,8 +29,8 @@ public class GearBehaviour : MonoBehaviour
 
         lineRenderer.positionCount = 2;
         lineRenderer.useWorldSpace = true;
-        lineRenderer.startWidth = 0.03f;
-        lineRenderer.endWidth = 0.03f;
+        lineRenderer.startWidth = 0.2f;
+        lineRenderer.endWidth = 0.2f;
         lineRenderer.numCapVertices = 2;
 
         if (lineRenderer.material == null)
@@ -45,6 +47,8 @@ public class GearBehaviour : MonoBehaviour
         speed = gearSpeed;
         attachMask = attachLayerMask;
         anchored = false;
+        ropeLengthLocked = false;
+        lockedRopeLength = 0f;
 
         rb.isKinematic = false;
         rb.linearVelocity = direction.normalized * speed;
@@ -54,7 +58,12 @@ public class GearBehaviour : MonoBehaviour
     {
         if (anchored && owner != null)
         {
-            ApplyPlayerPull();
+            UpdateRopeLengthLock();
+
+            if (ropeLengthLocked)
+                ApplyRopeLengthConstraint();
+            else
+                ApplyPlayerPull();
         }
 
         UpdateLine();
@@ -65,12 +74,45 @@ public class GearBehaviour : MonoBehaviour
         if (owner == null)
             return;
 
-        Vector3 toAnchor = anchorPoint - owner.transform.position;
+        Vector3 toAnchor = anchorPoint - owner.Rigidbody.position;
         if (toAnchor.sqrMagnitude < 0.01f)
             return;
 
         Vector3 forceDirection = toAnchor.normalized;
-        owner.Rigidbody.AddForce(forceDirection * pullForce, ForceMode.Acceleration);
+        // owner.Rigidbody.linearVelocity = Vector3.zero;
+        owner.Rigidbody.AddForce(forceDirection * pullForce, ForceMode.Impulse);
+    }
+
+    private void UpdateRopeLengthLock()
+    {
+        if (!owner.IsRopeLengthLockHeld)
+        {
+            ropeLengthLocked = false;
+            return;
+        }
+
+        if (ropeLengthLocked)
+            return;
+
+        lockedRopeLength = Vector3.Distance(anchorPoint, owner.Rigidbody.position);
+        ropeLengthLocked = true;
+    }
+
+    private void ApplyRopeLengthConstraint()
+    {
+        Rigidbody ownerRigidbody = owner.Rigidbody;
+        Vector3 fromAnchor = ownerRigidbody.position - anchorPoint;
+        float currentDistance = fromAnchor.magnitude;
+
+        if (currentDistance <= lockedRopeLength || currentDistance < 0.001f)
+            return;
+
+        Vector3 anchorToPlayerDirection = fromAnchor / currentDistance;
+        ownerRigidbody.position = anchorPoint + anchorToPlayerDirection * lockedRopeLength;
+
+        float outwardSpeed = Vector3.Dot(ownerRigidbody.linearVelocity, anchorToPlayerDirection);
+        if (outwardSpeed > 0f)
+            ownerRigidbody.linearVelocity -= anchorToPlayerDirection * outwardSpeed;
     }
 
     private void UpdateLine()
