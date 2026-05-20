@@ -17,11 +17,7 @@ public class GearManager : MonoBehaviour
             return;
         }
 
-        if (activeGear != null)
-        {
-            Destroy(activeGear.gameObject);
-            activeGear = null;
-        }
+        ReleaseGear();
         
         GameObject gearInstance = Instantiate(gearPrefab, origin, Quaternion.LookRotation(direction));
         activeGear = gearInstance.GetComponent<GearBehaviour>();
@@ -34,5 +30,14 @@ public class GearManager : MonoBehaviour
         }
 
         activeGear.Initialize(owner, direction, gearSpeed, attachMask);
+    }
+
+    public void ReleaseGear()
+    {
+        if (activeGear == null)
+            return;
+
+        Destroy(activeGear.gameObject);
+        activeGear = null;
     }
 }

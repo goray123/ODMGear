@@ -33,6 +33,7 @@ public class PlayerController : MonoBehaviour
     private Vector2 moveInput;
     private Vector2 lookInput;
     private bool jumpHeld;
+    private bool attackHeld;
 
     public Rigidbody Rigidbody => rigid;
     public bool IsRopeLengthLockHeld => jumpHeld;
@@ -56,6 +57,7 @@ public class PlayerController : MonoBehaviour
         RotateCamera();
         CheckGround();
         jumpHeld = Keyboard.current.spaceKey.isPressed;
+        Debug.Log(jumpHeld);
         Debug.DrawRay(transform.position, rigid.linearVelocity, Color.red);
     }
 
@@ -80,8 +82,6 @@ public class PlayerController : MonoBehaviour
 
     public void OnJump(InputValue value)
     {
-        Debug.Log(jumpHeld);
-
         if (!jumpHeld)
             return;
 
@@ -93,9 +93,22 @@ public class PlayerController : MonoBehaviour
         rigid.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
     }
 
-    public void OnAttack()
-    {   
-        Debug.Log("Firing gear!");
+    public void OnAttack(InputValue value)
+    {
+        bool isPressed = value.isPressed;
+
+        if (!isPressed)
+        {
+            attackHeld = false;
+            gearManager.ReleaseGear();
+            return;
+        }
+
+        if (attackHeld)
+            return;
+
+        attackHeld = true;
+
         Vector3 fireDirection = cameraPivot.forward;
         Vector3 fireOrigin = transform.position + Vector3.up * 3.5f;
         // + Vector3.up * 1.2f + fireDirection * 0.6f
