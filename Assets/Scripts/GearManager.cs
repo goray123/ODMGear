@@ -22,9 +22,10 @@ public class GearManager : MonoBehaviour
             Destroy(activeGear.gameObject);
             activeGear = null;
         }
-
+        
         GameObject gearInstance = Instantiate(gearPrefab, origin, Quaternion.LookRotation(direction));
         activeGear = gearInstance.GetComponent<GearBehaviour>();
+        Debug.Log("Instantiated gear prefab.");
 
         if (activeGear == null)
         {

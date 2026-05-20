@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 5951456072771912412}
   - component: {fileID: 7557455310819012407}
   - component: {fileID: 807353703086954482}
+  - component: {fileID: 6550006279704203056}
   m_Layer: 0
   m_Name: Gear
   m_TagString: Untagged
@@ -125,3 +126,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae171019898154846ae8a7f60214b06f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Gear
+  speed: 40
+  pullForce: 30
+  attachMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!54 &6550006279704203056
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7379514059317543499}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0

@@ -239,7 +239,7 @@ Transform:
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
   m_LocalRotation: {x: 0.17364816, y: 0, z: 0, w: 0.9848078}
-  m_LocalPosition: {x: 0, y: 0.5, z: 0}
+  m_LocalPosition: {x: 0, y: 1.5, z: -4}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -496,7 +496,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 8387fccde83ebd14cbbed57e516c7512, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -543,6 +543,7 @@ GameObject:
   - component: {fileID: 611192671}
   - component: {fileID: 611192673}
   - component: {fileID: 611192674}
+  - component: {fileID: 611192675}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -631,7 +632,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 611192666}
   serializedVersion: 5
-  m_Mass: 1
+  m_Mass: 10
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -687,6 +688,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   cameraPivot: {fileID: 1742078870}
   moveSpeed: 20
+  maxSpeed: 5
   jumpForce: 5
   mouseSensitivity: 0.1
   minPitch: -70
@@ -695,7 +697,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   groundCheckDistance: 0.2
-  gearManager: {fileID: 0}
+  gearManager: {fileID: 611192675}
 --- !u!114 &611192674
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -726,6 +728,23 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
+--- !u!114 &611192675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 611192666}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a16f88b19f6eda4aaea62347f979729, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GearManager
+  gearPrefab: {fileID: 7379514059317543499, guid: 0bd3d8999cd96b84dbc1a85136574fc4, type: 3}
+  gearSpeed: 40
+  attachMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &658186380
 GameObject:
   m_ObjectHideFlags: 0

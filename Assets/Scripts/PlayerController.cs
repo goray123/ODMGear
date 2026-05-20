@@ -12,6 +12,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 20f;
+    [SerializeField] private float maxSpeed = 10f;
     [SerializeField] private float jumpForce = 7f;
 
     [Header("Camera")]
@@ -43,9 +44,6 @@ public class PlayerController : MonoBehaviour
         playerCollider = GetComponent<Collider>();
 
         rigid.freezeRotation = true;
-
-        if (gearManager == null)
-            gearManager = FindObjectOfType<GearManager>();
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -86,14 +84,9 @@ public class PlayerController : MonoBehaviour
         rigid.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
     }
 
-    public void OnClick(InputValue value)
-    {
-        if (!value.Get<bool>())
-            return;
-
-        if (gearManager == null)
-            return;
-
+    public void OnAttack()
+    {   
+        Debug.Log("Firing gear!");
         Vector3 fireDirection = cameraPivot.forward;
         Vector3 fireOrigin = transform.position + Vector3.up * 1.2f + fireDirection * 0.6f;
 
@@ -120,6 +113,11 @@ public class PlayerController : MonoBehaviour
             rigid.linearVelocity.y,
             velocity.z
         );
+        // rigid.AddForce(velocity * maxSpeed, ForceMode.Impulse);
+        // if (rigid.linearVelocity.magnitude > maxSpeed)
+        // {
+        //     rigid.linearVelocity = rigid.linearVelocity.normalized * maxSpeed;
+        // }
     }
 
     // =========================
