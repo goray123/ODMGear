@@ -15,6 +15,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float speed = 20f;
     [SerializeField] private float maxRunSpeed = 20f;
     [SerializeField] private float jumpForce = 7f;
+    [SerializeField] private float fastFallAcceleration = 40f;
 
     [Header("Camera")]
     [SerializeField] private float mouseSensitivity = 0.15f;
@@ -30,6 +31,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Gear")]
     [SerializeField] private GearManager gearManager;
+    [SerializeField] private float fireOriginHeight = 4.5f;
 
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -39,6 +41,8 @@ public class PlayerController : MonoBehaviour
 
     public Rigidbody Rigidbody => rigid;
     public bool IsRopeLengthLockHeld => jumpHeld;
+    public Vector3 FireOrigin => transform.position + Vector3.up * fireOriginHeight;
+    public Vector3 FireDirection => cameraPivot.forward;
 
     private float pitch;
     private bool isGrounded;
@@ -66,6 +70,7 @@ public class PlayerController : MonoBehaviour
     private void FixedUpdate()
     {
         Move();
+        ApplyFastFall();
         ClampSpeedToMaxRunSpeed();
     }
 
@@ -115,11 +120,7 @@ public class PlayerController : MonoBehaviour
         attackHeld = true;
         attackStartedWithMouse = Mouse.current != null && Mouse.current.leftButton.isPressed;
 
-        Vector3 fireDirection = cameraPivot.forward;
-        Vector3 fireOrigin = transform.position + Vector3.up * 4.5f;
-        // + Vector3.up * 1.2f + fireDirection * 0.6f
-
-        gearManager.FireGear(fireOrigin, fireDirection, this);
+        gearManager.FireGear(FireOrigin, FireDirection, this);
     }
 
     private void UpdateAttackReleaseState()
@@ -175,6 +176,20 @@ public class PlayerController : MonoBehaviour
         bool isAirMovementWithoutAnchor = !isGrounded && (gearManager == null || !gearManager.IsAnchorAttached);
 
         return isAnchorMovement || isAirMovementWithoutAnchor;
+    }
+
+    private void ApplyFastFall()
+    {
+        if (isGrounded)
+            return;
+
+        if (Keyboard.current == null)
+            return;
+
+        if (!Keyboard.current.leftCtrlKey.isPressed && !Keyboard.current.rightCtrlKey.isPressed)
+            return;
+
+        rigid.AddForce(Vector3.down * fastFallAcceleration, ForceMode.Impulse);
     }
 
     public void ClampSpeedToMaxRunSpeed()
