@@ -11,8 +11,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform cameraPivot;
 
     [Header("Movement")]
-    [SerializeField] private float moveSpeed = 20f;
-    [SerializeField] private float maxSpeed = 10f;
+    [FormerlySerializedAs("moveSpeed")]
+    [SerializeField] private float speed = 20f;
+    [FormerlySerializedAs("maxSpeed")]
+    [SerializeField] private float maxWalkSpeed = 10f;
+    [SerializeField] private float maxRunSpeed = 20f;
     [SerializeField] private float jumpForce = 7f;
 
     [Header("Camera")]
@@ -34,6 +37,7 @@ public class PlayerController : MonoBehaviour
     private Vector2 lookInput;
     private bool jumpHeld;
     private bool attackHeld;
+    private bool attackStartedWithMouse;
 
     public Rigidbody Rigidbody => rigid;
     public bool IsRopeLengthLockHeld => jumpHeld;
@@ -56,6 +60,7 @@ public class PlayerController : MonoBehaviour
     {
         RotateCamera();
         CheckGround();
+        UpdateAttackReleaseState();
         jumpHeld = Keyboard.current.spaceKey.isPressed;
         Debug.Log(jumpHeld);
         Debug.DrawRay(transform.position, rigid.linearVelocity, Color.red);
@@ -99,21 +104,47 @@ public class PlayerController : MonoBehaviour
 
         if (!isPressed)
         {
-            attackHeld = false;
-            gearManager.ReleaseGear();
+            ReleaseGear();
             return;
         }
 
         if (attackHeld)
             return;
 
+        if (gearManager == null)
+            return;
+
         attackHeld = true;
+        attackStartedWithMouse = Mouse.current != null && Mouse.current.leftButton.isPressed;
 
         Vector3 fireDirection = cameraPivot.forward;
-        Vector3 fireOrigin = transform.position + Vector3.up * 3.5f;
+        Vector3 fireOrigin = transform.position + Vector3.up * 4.5f;
         // + Vector3.up * 1.2f + fireDirection * 0.6f
 
         gearManager.FireGear(fireOrigin, fireDirection, this);
+    }
+
+    private void UpdateAttackReleaseState()
+    {
+        if (!attackHeld)
+            return;
+
+        if (!attackStartedWithMouse)
+            return;
+
+        if (Mouse.current != null && Mouse.current.leftButton.isPressed)
+            return;
+
+        ReleaseGear();
+    }
+
+    private void ReleaseGear()
+    {
+        attackHeld = false;
+        attackStartedWithMouse = false;
+
+        if (gearManager != null)
+            gearManager.ReleaseGear();
     }
 
     // =========================
@@ -122,7 +153,16 @@ public class PlayerController : MonoBehaviour
 
     private void Move()
     {   
-        // if (moveInput.sqrMagnitude < 0.01f) return;
+        bool hasMoveInput = moveInput.sqrMagnitude > 0.01f;
+        bool isAnchorAttached = gearManager != null && gearManager.IsAnchorAttached;
+
+        if (!hasMoveInput)
+        {
+            if (!isAnchorAttached)
+                StopHorizontalMovement();
+
+            return;
+        }
 
         Vector3 moveDirection =
             transform.forward * moveInput.y +
@@ -131,18 +171,25 @@ public class PlayerController : MonoBehaviour
         if (moveDirection.sqrMagnitude > 1f)
             moveDirection.Normalize();
 
-        Vector3 velocity = moveDirection * moveSpeed;
+        rigid.AddForce(moveDirection * speed, ForceMode.Impulse);
 
-        // rigid.linearVelocity = new Vector3(
-        //     velocity.x,
-        //     rigid.linearVelocity.y,
-        //     velocity.z
-        // );
-        rigid.AddForce(velocity);
-        // if (rigid.linearVelocity.magnitude > maxSpeed)
-        // {
-        //     rigid.linearVelocity = rigid.linearVelocity.normalized * maxSpeed;
-        // }
+        ClampHorizontalSpeed(isAnchorAttached ? maxRunSpeed : maxWalkSpeed);
+    }
+
+    private void StopHorizontalMovement()
+    {
+        rigid.linearVelocity = new Vector3(0f, rigid.linearVelocity.y, 0f);
+    }
+
+    private void ClampHorizontalSpeed(float maxHorizontalSpeed)
+    {
+        Vector3 horizontalVelocity = new Vector3(rigid.linearVelocity.x, 0f, rigid.linearVelocity.z);
+
+        if (horizontalVelocity.magnitude <= maxHorizontalSpeed)
+            return;
+
+        Vector3 limitedHorizontalVelocity = horizontalVelocity.normalized * maxHorizontalSpeed;
+        rigid.linearVelocity = limitedHorizontalVelocity;
     }
 
     // =========================

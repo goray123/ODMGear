@@ -9,6 +9,8 @@ public class GearManager : MonoBehaviour
 
     private GearBehaviour activeGear;
 
+    public bool IsAnchorAttached => activeGear != null && activeGear.IsAnchored;
+
     public void FireGear(Vector3 origin, Vector3 direction, PlayerController owner)
     {
         if (gearPrefab == null)

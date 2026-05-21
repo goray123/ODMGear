@@ -17,6 +17,8 @@ public class GearBehaviour : MonoBehaviour
     private bool ropeLengthLocked;
     private float lockedRopeLength;
 
+    public bool IsAnchored => anchored;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
