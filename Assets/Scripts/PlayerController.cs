@@ -151,7 +151,7 @@ public class PlayerController : MonoBehaviour
 
     private void Move()
     {
-        if (gearManager == null || !gearManager.IsAnchorAttached || !jumpHeld)
+        if (!CanApplyDirectionalMovement())
             return;
 
         if (moveInput.sqrMagnitude <= 0.01f)
@@ -167,6 +167,14 @@ public class PlayerController : MonoBehaviour
         moveDirection.Normalize();
         rigid.AddForce(moveDirection * speed, ForceMode.Impulse);
         ClampSpeedToMaxRunSpeed();
+    }
+
+    private bool CanApplyDirectionalMovement()
+    {
+        bool isAnchorMovement = gearManager != null && gearManager.IsAnchorAttached && jumpHeld;
+        bool isAirMovementWithoutAnchor = !isGrounded && (gearManager == null || !gearManager.IsAnchorAttached);
+
+        return isAnchorMovement || isAirMovementWithoutAnchor;
     }
 
     public void ClampSpeedToMaxRunSpeed()
