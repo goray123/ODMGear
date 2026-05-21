@@ -13,8 +13,6 @@ public class PlayerController : MonoBehaviour
     [Header("Movement")]
     [FormerlySerializedAs("moveSpeed")]
     [SerializeField] private float speed = 20f;
-    [FormerlySerializedAs("maxSpeed")]
-    [SerializeField] private float maxWalkSpeed = 10f;
     [SerializeField] private float maxRunSpeed = 20f;
     [SerializeField] private float jumpForce = 7f;
 
@@ -63,12 +61,12 @@ public class PlayerController : MonoBehaviour
         UpdateAttackReleaseState();
         jumpHeld = Keyboard.current.spaceKey.isPressed;
         Debug.Log(jumpHeld);
-        Debug.DrawRay(transform.position, rigid.linearVelocity, Color.red);
     }
 
     private void FixedUpdate()
     {
         Move();
+        ClampSpeedToMaxRunSpeed();
     }
 
     // =========================
@@ -76,7 +74,7 @@ public class PlayerController : MonoBehaviour
     // =========================
 
     public void OnMove(InputValue value)
-    {   
+    {
         moveInput = value.Get<Vector2>();
     }
 
@@ -152,44 +150,38 @@ public class PlayerController : MonoBehaviour
     // =========================
 
     private void Move()
-    {   
-        bool hasMoveInput = moveInput.sqrMagnitude > 0.01f;
-        bool isAnchorAttached = gearManager != null && gearManager.IsAnchorAttached;
-
-        if (!hasMoveInput)
-        {
-            if (!isAnchorAttached)
-                StopHorizontalMovement();
-
+    {
+        if (gearManager == null || !gearManager.IsAnchorAttached || !jumpHeld)
             return;
-        }
+
+        if (moveInput.sqrMagnitude <= 0.01f)
+            return;
 
         Vector3 moveDirection =
             transform.forward * moveInput.y +
             transform.right * moveInput.x;
 
-        if (moveDirection.sqrMagnitude > 1f)
-            moveDirection.Normalize();
+        if (moveDirection.sqrMagnitude <= 0.01f)
+            return;
 
+        moveDirection.Normalize();
         rigid.AddForce(moveDirection * speed, ForceMode.Impulse);
-
-        ClampHorizontalSpeed(isAnchorAttached ? maxRunSpeed : maxWalkSpeed);
+        ClampSpeedToMaxRunSpeed();
     }
 
-    private void StopHorizontalMovement()
-    {
-        rigid.linearVelocity = new Vector3(0f, rigid.linearVelocity.y, 0f);
-    }
-
-    private void ClampHorizontalSpeed(float maxHorizontalSpeed)
+    public void ClampSpeedToMaxRunSpeed()
     {
         Vector3 horizontalVelocity = new Vector3(rigid.linearVelocity.x, 0f, rigid.linearVelocity.z);
 
-        if (horizontalVelocity.magnitude <= maxHorizontalSpeed)
+        if (horizontalVelocity.magnitude <= maxRunSpeed)
             return;
 
-        Vector3 limitedHorizontalVelocity = horizontalVelocity.normalized * maxHorizontalSpeed;
-        rigid.linearVelocity = limitedHorizontalVelocity;
+        Vector3 limitedHorizontalVelocity = horizontalVelocity.normalized * maxRunSpeed;
+        rigid.linearVelocity = new Vector3(
+            limitedHorizontalVelocity.x,
+            rigid.linearVelocity.y,
+            limitedHorizontalVelocity.z
+        );
     }
 
     // =========================

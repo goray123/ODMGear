@@ -1144,9 +1144,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   cameraPivot: {fileID: 1742078870}
-  speed: 40
-  maxWalkSpeed: 5
-  maxRunSpeed: 40
+  speed: 20
+  maxRunSpeed: 120
   jumpForce: 3
   mouseSensitivity: 0.1
   minPitch: -80
