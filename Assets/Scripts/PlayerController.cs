@@ -36,11 +36,12 @@ public class PlayerController : MonoBehaviour
     private Vector2 moveInput;
     private Vector2 lookInput;
     private bool jumpHeld;
-    private bool attackHeld;
-    private bool attackStartedWithMouse;
+    private bool leftGearHeld;
+    private bool rightGearHeld;
 
     public Rigidbody Rigidbody => rigid;
     public bool IsRopeLengthLockHeld => jumpHeld;
+    public bool CanUseRopeLengthLock => gearManager != null && gearManager.AnchoredGearCount == 1;
     public Vector3 FireOrigin => transform.position + Vector3.up * fireOriginHeight;
     public Vector3 FireDirection => cameraPivot.forward;
 
@@ -62,7 +63,7 @@ public class PlayerController : MonoBehaviour
     {
         RotateCamera();
         CheckGround();
-        UpdateAttackReleaseState();
+        UpdateGearInputState();
         jumpHeld = Keyboard.current.spaceKey.isPressed;
         Debug.Log(jumpHeld);
     }
@@ -103,47 +104,46 @@ public class PlayerController : MonoBehaviour
 
     public void OnAttack(InputValue value)
     {
-        bool isPressed = value.isPressed;
-
-        if (!isPressed)
-        {
-            ReleaseGear();
-            return;
-        }
-
-        if (attackHeld)
+        if (Mouse.current != null)
             return;
 
+        UpdateGearSlotInput(GearSlot.Left, value.isPressed, ref leftGearHeld);
+    }
+
+    private void UpdateGearInputState()
+    {
+        if (Mouse.current == null)
+            return;
+
+        UpdateGearSlotInput(GearSlot.Left, Mouse.current.leftButton.isPressed, ref leftGearHeld);
+        UpdateGearSlotInput(GearSlot.Right, Mouse.current.rightButton.isPressed, ref rightGearHeld);
+    }
+
+    private void UpdateGearSlotInput(GearSlot slot, bool isPressed, ref bool wasPressed)
+    {
+        if (isPressed == wasPressed)
+            return;
+
+        wasPressed = isPressed;
+
+        if (isPressed)
+            FireGear(slot);
+        else
+            ReleaseGear(slot);
+    }
+
+    private void FireGear(GearSlot slot)
+    {
         if (gearManager == null)
             return;
 
-        attackHeld = true;
-        attackStartedWithMouse = Mouse.current != null && Mouse.current.leftButton.isPressed;
-
-        gearManager.FireGear(FireOrigin, FireDirection, this);
+        gearManager.FireGear(slot, FireOrigin, FireDirection, this);
     }
 
-    private void UpdateAttackReleaseState()
+    private void ReleaseGear(GearSlot slot)
     {
-        if (!attackHeld)
-            return;
-
-        if (!attackStartedWithMouse)
-            return;
-
-        if (Mouse.current != null && Mouse.current.leftButton.isPressed)
-            return;
-
-        ReleaseGear();
-    }
-
-    private void ReleaseGear()
-    {
-        attackHeld = false;
-        attackStartedWithMouse = false;
-
         if (gearManager != null)
-            gearManager.ReleaseGear();
+            gearManager.ReleaseGear(slot);
     }
 
     // =========================

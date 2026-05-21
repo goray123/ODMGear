@@ -89,7 +89,7 @@ public class GearBehaviour : MonoBehaviour
 
     private void UpdateRopeLengthLock()
     {
-        if (!owner.IsRopeLengthLockHeld)
+        if (!owner.IsRopeLengthLockHeld || !owner.CanUseRopeLengthLock)
         {
             ropeLengthLocked = false;
             return;
