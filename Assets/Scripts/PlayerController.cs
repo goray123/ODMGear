@@ -14,6 +14,7 @@ public class PlayerController : MonoBehaviour
     [FormerlySerializedAs("moveSpeed")]
     [SerializeField] private float speed = 20f;
     [SerializeField] private float maxRunSpeed = 20f;
+    [SerializeField] private float groundedMaxSpeedMultiplier = 0.25f;
     [SerializeField] private float jumpForce = 7f;
     [SerializeField] private float fastFallAcceleration = 40f;
 
@@ -38,6 +39,8 @@ public class PlayerController : MonoBehaviour
     private bool jumpHeld;
     private bool leftGearHeld;
     private bool rightGearHeld;
+    private bool actionLocked;
+    private bool lookLocked;
 
     public Rigidbody Rigidbody => rigid;
     public bool IsRopeLengthLockHeld => jumpHeld;
@@ -61,15 +64,26 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        RotateCamera();
+        if (!lookLocked)
+            RotateCamera();
+
         CheckGround();
+
+        if (actionLocked)
+        {
+            jumpHeld = false;
+            return;
+        }
+
         UpdateGearInputState();
         jumpHeld = Keyboard.current.spaceKey.isPressed;
-        Debug.Log(jumpHeld);
     }
 
     private void FixedUpdate()
     {
+        if (actionLocked)
+            return;
+
         Move();
         ApplyFastFall();
         ClampSpeedToMaxRunSpeed();
@@ -81,16 +95,31 @@ public class PlayerController : MonoBehaviour
 
     public void OnMove(InputValue value)
     {
+        if (actionLocked)
+        {
+            moveInput = Vector2.zero;
+            return;
+        }
+
         moveInput = value.Get<Vector2>();
     }
 
     public void OnLook(InputValue value)
     {
+        if (lookLocked)
+        {
+            lookInput = Vector2.zero;
+            return;
+        }
+
         lookInput = value.Get<Vector2>();
     }
 
     public void OnJump(InputValue value)
     {
+        if (actionLocked)
+            return;
+
         if (!jumpHeld)
             return;
 
@@ -104,6 +133,9 @@ public class PlayerController : MonoBehaviour
 
     public void OnAttack(InputValue value)
     {
+        if (actionLocked)
+            return;
+
         if (Mouse.current != null)
             return;
 
@@ -112,6 +144,9 @@ public class PlayerController : MonoBehaviour
 
     private void UpdateGearInputState()
     {
+        if (actionLocked)
+            return;
+
         if (Mouse.current == null)
             return;
 
@@ -146,6 +181,24 @@ public class PlayerController : MonoBehaviour
             gearManager.ReleaseGear(slot);
     }
 
+    public void SetActionLock(bool locked, bool allowLook)
+    {
+        actionLocked = locked;
+        lookLocked = locked && !allowLook;
+
+        if (!locked)
+            return;
+
+        moveInput = Vector2.zero;
+        jumpHeld = false;
+
+        if (gearManager != null)
+            gearManager.ReleaseGear();
+
+        leftGearHeld = false;
+        rightGearHeld = false;
+    }
+
     // =========================
     // Movement
     // =========================
@@ -172,10 +225,11 @@ public class PlayerController : MonoBehaviour
 
     private bool CanApplyDirectionalMovement()
     {
+        bool isGroundMovement = isGrounded;
         bool isAnchorMovement = gearManager != null && gearManager.IsAnchorAttached && jumpHeld;
         bool isAirMovementWithoutAnchor = !isGrounded && (gearManager == null || !gearManager.IsAnchorAttached);
 
-        return isAnchorMovement || isAirMovementWithoutAnchor;
+        return isGroundMovement || isAnchorMovement || isAirMovementWithoutAnchor;
     }
 
     private void ApplyFastFall()
@@ -195,11 +249,12 @@ public class PlayerController : MonoBehaviour
     public void ClampSpeedToMaxRunSpeed()
     {
         Vector3 horizontalVelocity = new Vector3(rigid.linearVelocity.x, 0f, rigid.linearVelocity.z);
+        float currentMaxRunSpeed = isGrounded ? maxRunSpeed * groundedMaxSpeedMultiplier : maxRunSpeed;
 
-        if (horizontalVelocity.magnitude <= maxRunSpeed)
+        if (horizontalVelocity.magnitude <= currentMaxRunSpeed)
             return;
 
-        Vector3 limitedHorizontalVelocity = horizontalVelocity.normalized * maxRunSpeed;
+        Vector3 limitedHorizontalVelocity = horizontalVelocity.normalized * currentMaxRunSpeed;
         rigid.linearVelocity = new Vector3(
             limitedHorizontalVelocity.x,
             rigid.linearVelocity.y,

@@ -145,9 +145,9 @@ public class GearBehaviour : MonoBehaviour
         anchorPoint = contact.point;
         anchored = true;
 
-        rb.isKinematic = true;
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
+        rb.isKinematic = true;
         transform.position = anchorPoint;
         transform.rotation = Quaternion.LookRotation(-contact.normal, Vector3.up);
     }

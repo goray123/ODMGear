@@ -17,6 +17,8 @@ public class GearManager : MonoBehaviour
     private GearBehaviour rightGear;
 
     public bool IsAnchorAttached => IsGearAnchored(leftGear) || IsGearAnchored(rightGear);
+    public bool IsLeftAnchorAttached => IsGearAnchored(leftGear);
+    public bool IsRightAnchorAttached => IsGearAnchored(rightGear);
     public int AnchoredGearCount => GetAnchoredGearCount();
 
     public void FireGear(GearSlot slot, Vector3 origin, Vector3 direction, PlayerController owner)
