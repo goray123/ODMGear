@@ -66,6 +66,8 @@ public class GearBehaviour : MonoBehaviour
                 ApplyRopeLengthConstraint();
             else
                 ApplyPlayerPull();
+
+            owner.ClampSpeedToMaxRunSpeed();
         }
 
         UpdateLine();
@@ -87,7 +89,7 @@ public class GearBehaviour : MonoBehaviour
 
     private void UpdateRopeLengthLock()
     {
-        if (!owner.IsRopeLengthLockHeld)
+        if (!owner.IsRopeLengthLockHeld || !owner.CanUseRopeLengthLock)
         {
             ropeLengthLocked = false;
             return;
@@ -106,15 +108,14 @@ public class GearBehaviour : MonoBehaviour
         Vector3 fromAnchor = ownerRigidbody.position - anchorPoint;
         float currentDistance = fromAnchor.magnitude;
 
-        if (currentDistance <= lockedRopeLength || currentDistance < 0.001f)
+        if (currentDistance < 0.001f)
             return;
 
         Vector3 anchorToPlayerDirection = fromAnchor / currentDistance;
         ownerRigidbody.position = anchorPoint + anchorToPlayerDirection * lockedRopeLength;
 
-        float outwardSpeed = Vector3.Dot(ownerRigidbody.linearVelocity, anchorToPlayerDirection);
-        if (outwardSpeed > 0f)
-            ownerRigidbody.linearVelocity -= anchorToPlayerDirection * outwardSpeed;
+        float ropeDirectionSpeed = Vector3.Dot(ownerRigidbody.linearVelocity, anchorToPlayerDirection);
+        ownerRigidbody.linearVelocity -= anchorToPlayerDirection * ropeDirectionSpeed;
     }
 
     private void UpdateLine()
@@ -144,9 +145,9 @@ public class GearBehaviour : MonoBehaviour
         anchorPoint = contact.point;
         anchored = true;
 
-        rb.isKinematic = true;
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
+        rb.isKinematic = true;
         transform.position = anchorPoint;
         transform.rotation = Quaternion.LookRotation(-contact.normal, Vector3.up);
     }

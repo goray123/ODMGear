@@ -1,5 +1,11 @@
 using UnityEngine;
 
+public enum GearSlot
+{
+    Left,
+    Right
+}
+
 public class GearManager : MonoBehaviour
 {
     [Header("Gear")]
@@ -7,11 +13,15 @@ public class GearManager : MonoBehaviour
     [SerializeField] private float gearSpeed = 40f;
     [SerializeField] private LayerMask attachMask = ~0;
 
-    private GearBehaviour activeGear;
+    private GearBehaviour leftGear;
+    private GearBehaviour rightGear;
 
-    public bool IsAnchorAttached => activeGear != null && activeGear.IsAnchored;
+    public bool IsAnchorAttached => IsGearAnchored(leftGear) || IsGearAnchored(rightGear);
+    public bool IsLeftAnchorAttached => IsGearAnchored(leftGear);
+    public bool IsRightAnchorAttached => IsGearAnchored(rightGear);
+    public int AnchoredGearCount => GetAnchoredGearCount();
 
-    public void FireGear(Vector3 origin, Vector3 direction, PlayerController owner)
+    public void FireGear(GearSlot slot, Vector3 origin, Vector3 direction, PlayerController owner)
     {
         if (gearPrefab == null)
         {
@@ -19,27 +29,68 @@ public class GearManager : MonoBehaviour
             return;
         }
 
-        ReleaseGear();
+        ReleaseGear(slot);
         
         GameObject gearInstance = Instantiate(gearPrefab, origin, Quaternion.LookRotation(direction));
-        activeGear = gearInstance.GetComponent<GearBehaviour>();
+        GearBehaviour gear = gearInstance.GetComponent<GearBehaviour>();
         Debug.Log("Instantiated gear prefab.");
 
-        if (activeGear == null)
+        if (gear == null)
         {
             Debug.LogError("GearManager: gearPrefab does not contain a GearBehaviour component.");
+            Destroy(gearInstance);
             return;
         }
 
-        activeGear.Initialize(owner, direction, gearSpeed, attachMask);
+        SetGear(slot, gear);
+        gear.Initialize(owner, direction, gearSpeed, attachMask);
+    }
+
+    public void ReleaseGear(GearSlot slot)
+    {
+        GearBehaviour gear = GetGear(slot);
+
+        if (gear == null)
+            return;
+
+        Destroy(gear.gameObject);
+        SetGear(slot, null);
     }
 
     public void ReleaseGear()
     {
-        if (activeGear == null)
-            return;
+        ReleaseGear(GearSlot.Left);
+        ReleaseGear(GearSlot.Right);
+    }
 
-        Destroy(activeGear.gameObject);
-        activeGear = null;
+    private GearBehaviour GetGear(GearSlot slot)
+    {
+        return slot == GearSlot.Left ? leftGear : rightGear;
+    }
+
+    private void SetGear(GearSlot slot, GearBehaviour gear)
+    {
+        if (slot == GearSlot.Left)
+            leftGear = gear;
+        else
+            rightGear = gear;
+    }
+
+    private int GetAnchoredGearCount()
+    {
+        int count = 0;
+
+        if (IsGearAnchored(leftGear))
+            count++;
+
+        if (IsGearAnchored(rightGear))
+            count++;
+
+        return count;
+    }
+
+    private bool IsGearAnchored(GearBehaviour gear)
+    {
+        return gear != null && gear.IsAnchored;
     }
 }
