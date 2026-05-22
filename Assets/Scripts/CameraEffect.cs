@@ -18,7 +18,7 @@ public class CameraEffects : MonoBehaviour
 
     [Header("Slow Motion Visual")]
     [SerializeField] private float slowMotionSaturation = -80f;
-    [SerializeField] private float slowMotionVignette = 0.3f;
+    [SerializeField] private float slowMotionVignette = 0.25f;
 
     [Header("Mouse")]
     [SerializeField] private float slowMotionSensitivityMultiplier = 0.5f;
@@ -94,7 +94,10 @@ public class CameraEffects : MonoBehaviour
             colorAdjustments.saturation.value = slowMotionSaturation;
 
         if (vignette != null)
-            vignette.intensity.value = slowMotionVignette;
+        {
+            vignette.intensity.value =
+                Mathf.Clamp(slowMotionVignette, 0f, 0.45f);
+        }
 
         if (playerController != null && initializedSensitivity)
         {

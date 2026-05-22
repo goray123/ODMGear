@@ -28,6 +28,15 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField] private RectTransform targetUI;
     [SerializeField] private Vector3 targetUiOffset = Vector3.up * 2f;
 
+    [Header("Kill Effects")]
+    [SerializeField] private GameObject slashEffectPrefab;
+
+    [SerializeField] private GameObject burstEffectPrefab;
+
+    [SerializeField] private GameObject sparksEffectPrefab;
+
+    [SerializeField] private Vector3 effectOffset = Vector3.up * 1.5f;
+
     private readonly HashSet<Transform> checkedEnemies = new HashSet<Transform>();
 
     private Rigidbody rigid;
@@ -38,6 +47,8 @@ public class PlayerAttack : MonoBehaviour
     private bool previousUseGravity;
     private float previousTimeScale = 1f;
     private float previousFixedDeltaTime = 0.02f;
+    private Vector3 pendingEffectPosition;
+    private bool hasPendingRelaunchEffect;
 
     private void Awake()
     {
@@ -128,6 +139,8 @@ public class PlayerAttack : MonoBehaviour
         rigid.position = targetPosition;
         rigid.linearVelocity = Vector3.zero;
         rigid.angularVelocity = Vector3.zero;
+
+        KillEnemy(target);
 
         playerController?.SetActionLock(true, true);
         ActivateSlowMotion();
@@ -277,6 +290,7 @@ public class PlayerAttack : MonoBehaviour
         DeactivateSlowMotion();
         cameraEffects?.ExitSlowMotion();
         cameraEffects?.PlayRelaunchEffect();
+        PlayRelaunchEffects();
 
         rigid.isKinematic = previousIsKinematic;
         rigid.useGravity = previousUseGravity;
@@ -315,5 +329,93 @@ public class PlayerAttack : MonoBehaviour
             return;
 
         FinishAttack(Vector3.zero);
+    }
+
+    private void KillEnemy(Transform enemy)
+    {
+        if (enemy == null)
+            return;
+
+        Vector3 effectPosition =
+            enemy.position + effectOffset;
+
+        // Burst는 즉시 실행
+        SpawnEffect(
+            burstEffectPrefab,
+            effectPosition,
+            Quaternion.identity
+        );
+
+        // 위치만 저장
+        pendingEffectPosition = effectPosition;
+        hasPendingRelaunchEffect = true;
+
+        // 적 제거
+        enemy.gameObject.SetActive(false);
+    }
+
+    private void PlayRelaunchEffects()
+    {
+        if (!hasPendingRelaunchEffect)
+            return;
+
+        Quaternion relaunchRotation =
+            Quaternion.LookRotation(
+                GetCameraRelaunchVelocity().normalized
+            );
+
+        // Slash
+        SpawnEffect(
+            slashEffectPrefab,
+            pendingEffectPosition,
+            relaunchRotation
+        );
+
+        // Sparks
+        SpawnEffect(
+            sparksEffectPrefab,
+            pendingEffectPosition,
+            relaunchRotation
+        );
+
+        hasPendingRelaunchEffect = false;
+    }
+
+    private void SpawnEffect(
+    GameObject prefab,
+    Vector3 position,
+    Quaternion rotation)
+    {
+        if (prefab == null)
+        {
+            Debug.Log("Prefab is NULL");
+            return;
+        }
+
+        Debug.Log("Spawn Effect : " + prefab.name);
+
+        GameObject effect =
+            Instantiate(prefab, position, rotation);
+
+        Debug.Log("Effect Spawned");
+
+        ParticleSystem[] particleSystems =
+            effect.GetComponentsInChildren<ParticleSystem>();
+
+        float longestLifetime = 0f;
+
+        foreach (ParticleSystem ps in particleSystems)
+        {
+            var main = ps.main;
+
+            float lifetime =
+                main.duration +
+                main.startLifetime.constantMax;
+
+            if (lifetime > longestLifetime)
+                longestLifetime = lifetime;
+        }
+
+        Destroy(effect, longestLifetime + 0.5f);
     }
 }

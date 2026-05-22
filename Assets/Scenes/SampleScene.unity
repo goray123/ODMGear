@@ -2931,7 +2931,7 @@ MonoBehaviour:
   relaunchFov: 82
   fovSmoothSpeed: 10
   slowMotionSaturation: -90
-  slowMotionVignette: 0.5
+  slowMotionVignette: 0.3
   slowMotionSensitivityMultiplier: 0.5
   slowMotionSlider: {fileID: 637858839}
 --- !u!1 &365865690
@@ -4514,6 +4514,10 @@ MonoBehaviour:
   relaunchSpeed: 120
   targetUI: {fileID: 526924276}
   targetUiOffset: {x: 0, y: 0, z: 0}
+  slashEffectPrefab: {fileID: 4845624205353786525, guid: f09e89ac9a2c8ba4a8b21a2e939d1a14, type: 3}
+  burstEffectPrefab: {fileID: 1867429002418045624, guid: 63a3268a8e162ff4ba4ed80957ce5c48, type: 3}
+  sparksEffectPrefab: {fileID: 4791455907651162765, guid: ff14b232ae8080f4b89c6626e9dccba0, type: 3}
+  effectOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &635178535
 GameObject:
   m_ObjectHideFlags: 0
