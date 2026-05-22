@@ -51,6 +51,12 @@ public class PlayerController : MonoBehaviour
     private float pitch;
     private bool isGrounded;
 
+    public float MouseSensitivity
+    {
+        get => mouseSensitivity;
+        set => mouseSensitivity = value;
+    }
+
     private void Awake()
     {
         rigid = GetComponent<Rigidbody>();
@@ -182,22 +188,46 @@ public class PlayerController : MonoBehaviour
     }
 
     public void SetActionLock(bool locked, bool allowLook)
+{
+    actionLocked = locked;
+    lookLocked = locked && !allowLook;
+
+    if (!locked)
     {
-        actionLocked = locked;
-        lookLocked = locked && !allowLook;
+        // 현재 키 상태를 즉시 반영
+        Vector2 restoredInput = Vector2.zero;
 
-        if (!locked)
-            return;
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.wKey.isPressed)
+                restoredInput.y += 1f;
 
-        moveInput = Vector2.zero;
-        jumpHeld = false;
+            if (Keyboard.current.sKey.isPressed)
+                restoredInput.y -= 1f;
 
-        if (gearManager != null)
-            gearManager.ReleaseGear();
+            if (Keyboard.current.dKey.isPressed)
+                restoredInput.x += 1f;
 
-        leftGearHeld = false;
-        rightGearHeld = false;
+            if (Keyboard.current.aKey.isPressed)
+                restoredInput.x -= 1f;
+        }
+
+        moveInput = restoredInput.normalized;
+        jumpHeld = Keyboard.current != null &&
+           Keyboard.current.spaceKey.isPressed;
+
+        return;
     }
+
+    moveInput = Vector2.zero;
+    jumpHeld = false;
+
+    if (gearManager != null)
+        gearManager.ReleaseGear();
+
+    leftGearHeld = false;
+    rightGearHeld = false;
+}
 
     // =========================
     // Movement

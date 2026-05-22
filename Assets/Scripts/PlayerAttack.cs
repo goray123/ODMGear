@@ -9,18 +9,24 @@ public class PlayerAttack : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private Camera playerCamera;
+    [SerializeField] private CameraEffects cameraEffects;
     [SerializeField] private PlayerController playerController;
 
     [Header("Enemy Search")]
     [SerializeField] private string enemyTag = "Enemy";
     [SerializeField] private LayerMask enemyLayers;
     [SerializeField] private float maxSearchDistance = 300f;
+    [SerializeField] private float maximumTargetDistance = 30f;
 
     [Header("Attack")]
     [SerializeField] private float dashDuration = 0.12f;
     [SerializeField] private float slowMotionScale = 0.1f;
     [SerializeField] private float releaseWindowRealTime = 0.2f;
     [SerializeField] private float relaunchSpeed = 80f;
+
+    [Header("Target UI")]
+    [SerializeField] private RectTransform targetUI;
+    [SerializeField] private Vector3 targetUiOffset = Vector3.up * 2f;
 
     private readonly HashSet<Transform> checkedEnemies = new HashSet<Transform>();
 
@@ -49,17 +55,48 @@ public class PlayerAttack : MonoBehaviour
 
     private void Update()
     {
+        Transform currentTarget = FindClosestEnemyInCameraView();
+
+        UpdateTargetUI(currentTarget);
+
         if (isAttacking)
             return;
 
         if (Keyboard.current == null || !Keyboard.current.eKey.wasPressedThisFrame)
             return;
 
-        Transform target = FindClosestEnemyInCameraView();
-        if (target == null)
+        if (currentTarget == null)
             return;
 
-        attackRoutine = StartCoroutine(AttackSequence(target));
+        attackRoutine = StartCoroutine(AttackSequence(currentTarget));
+    }
+
+    private void UpdateTargetUI(Transform target)
+    {
+        if (targetUI == null)
+            return;
+
+        Camera cam = ResolveCamera();
+
+        if (target == null || cam == null)
+        {
+            targetUI.gameObject.SetActive(false);
+            return;
+        }
+
+        Vector3 worldPosition = target.position + targetUiOffset;
+
+        Vector3 screenPosition = cam.WorldToScreenPoint(worldPosition);
+
+        // 카메라 뒤
+        if (screenPosition.z <= 0f)
+        {
+            targetUI.gameObject.SetActive(false);
+            return;
+        }
+
+        targetUI.gameObject.SetActive(true);
+        targetUI.position = screenPosition;
     }
 
     private IEnumerator AttackSequence(Transform target)
@@ -94,15 +131,31 @@ public class PlayerAttack : MonoBehaviour
 
         playerController?.SetActionLock(true, true);
         ActivateSlowMotion();
+        cameraEffects?.EnterSlowMotion(releaseWindowRealTime);
 
         elapsed = 0f;
 
+        bool previousEPressed = Keyboard.current != null && Keyboard.current.eKey.isPressed;
+
         while (elapsed < releaseWindowRealTime)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
+
+            bool currentEPressed = Keyboard.current != null && Keyboard.current.eKey.isPressed;
+
+            // E를 떼는 순간 공격 종료
+            if (previousEPressed && !currentEPressed)
+            {
+                FinishAttack(GetCameraRelaunchVelocity());
+                yield break;
+            }
+
+            previousEPressed = currentEPressed;
+
             yield return null;
         }
 
+        // 제한 시간 초과 시 자동 종료
         FinishAttack(GetCameraRelaunchVelocity());
     }
 
@@ -127,17 +180,29 @@ public class PlayerAttack : MonoBehaviour
         foreach (Collider candidate in candidates)
         {
             Transform enemy = GetEnemyRoot(candidate.transform);
+
             if (enemy == null || enemy == transform || enemy.IsChildOf(transform))
                 continue;
 
             if (!checkedEnemies.Add(enemy))
                 continue;
 
+            // 너무 멀면 타겟 제외
+            float distance = Vector3.Distance(
+                transform.position,
+                enemy.position
+            );
+
+            if (distance >= maximumTargetDistance)
+                continue;
+
             Vector3 viewPosition = cam.WorldToViewportPoint(candidate.bounds.center);
+
             if (viewPosition.z <= 0f)
                 continue;
 
-            if (viewPosition.x < 0f || viewPosition.x > 1f || viewPosition.y < 0f || viewPosition.y > 1f)
+            if (viewPosition.x < 0f || viewPosition.x > 1f ||
+                viewPosition.y < 0f || viewPosition.y > 1f)
                 continue;
 
             if (viewPosition.z >= closestForwardDistance)
@@ -210,6 +275,8 @@ public class PlayerAttack : MonoBehaviour
     private void FinishAttack(Vector3 relaunchVelocity)
     {
         DeactivateSlowMotion();
+        cameraEffects?.ExitSlowMotion();
+        cameraEffects?.PlayRelaunchEffect();
 
         rigid.isKinematic = previousIsKinematic;
         rigid.useGravity = previousUseGravity;
