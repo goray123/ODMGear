@@ -45,6 +45,7 @@ public class PlayerController : MonoBehaviour
     public Rigidbody Rigidbody => rigid;
     public bool IsRopeLengthLockHeld => jumpHeld;
     public bool CanUseRopeLengthLock => gearManager != null && gearManager.AnchoredGearCount == 1;
+    public bool HasMoveInput => moveInput.sqrMagnitude > 0.01f;
     public Vector3 FireOrigin => transform.position + Vector3.up * fireOriginHeight;
     public Vector3 FireDirection => cameraPivot.forward;
 
