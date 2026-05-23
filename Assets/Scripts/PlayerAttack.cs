@@ -336,22 +336,19 @@ public class PlayerAttack : MonoBehaviour
         if (enemy == null)
             return;
 
-        Vector3 effectPosition =
-            enemy.position + effectOffset;
+        Vector3 effectPosition = enemy.position + effectOffset;
 
-        // Burst는 즉시 실행
-        SpawnEffect(
-            burstEffectPrefab,
-            effectPosition,
-            Quaternion.identity
-        );
+        SpawnEffect(burstEffectPrefab, effectPosition, Quaternion.identity);
 
-        // 위치만 저장
         pendingEffectPosition = effectPosition;
         hasPendingRelaunchEffect = true;
 
-        // 적 제거
-        enemy.gameObject.SetActive(false);
+        // 기존: enemy.gameObject.SetActive(false);
+        // 변경: GameManager에 킬 처리 위임 (카운트 증가 + 리스폰)
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnEnemyKilled(enemy.gameObject);
+        else
+            enemy.gameObject.SetActive(false); // GameManager 없을 때 폴백
     }
 
     private void PlayRelaunchEffects()

@@ -43,7 +43,12 @@ public class PlayerController : MonoBehaviour
     private bool lookLocked;
 
     public Rigidbody Rigidbody => rigid;
-    public bool IsRopeLengthLockHeld => jumpHeld;
+    public bool IsRopeLengthLockHeld =>
+    jumpHeld ||
+    (!isGrounded
+     && gearManager != null
+     && gearManager.IsAnchorAttached
+     && moveInput.sqrMagnitude > 0.01f);
     public bool CanUseRopeLengthLock => gearManager != null && gearManager.AnchoredGearCount == 1;
     public Vector3 FireOrigin => transform.position + Vector3.up * fireOriginHeight;
     public Vector3 FireDirection => cameraPivot.forward;
@@ -256,8 +261,14 @@ public class PlayerController : MonoBehaviour
     private bool CanApplyDirectionalMovement()
     {
         bool isGroundMovement = isGrounded;
-        bool isAnchorMovement = gearManager != null && gearManager.IsAnchorAttached && jumpHeld;
-        bool isAirMovementWithoutAnchor = !isGrounded && (gearManager == null || !gearManager.IsAnchorAttached);
+
+        // 앵커 연결 + 공중이면 스페이스 없이도 이동 가능 (스윙 모드 자동 진입)
+        bool isAnchorMovement = gearManager != null
+            && gearManager.IsAnchorAttached
+            && !isGrounded;
+
+        bool isAirMovementWithoutAnchor = !isGrounded
+            && (gearManager == null || !gearManager.IsAnchorAttached);
 
         return isGroundMovement || isAnchorMovement || isAirMovementWithoutAnchor;
     }
