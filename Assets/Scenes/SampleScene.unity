@@ -2805,7 +2805,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
-  m_RequiresOpaqueTextureOption: 2
+  m_RequiresOpaqueTextureOption: 1
   m_CameraType: 0
   m_Cameras: []
   m_RendererIndex: -1
@@ -12443,12 +12443,12 @@ MonoBehaviour:
   targetCamera: {fileID: 330585545}
   playerController: {fileID: 611192673}
   gearManager: {fileID: 611192675}
-  normalFov: 60
+  edgeBlurMaterial: {fileID: 2100000, guid: 847c7e83def78c84f9e4bb8a4acf6c6d, type: 2}
   ropeFov: 75
   fovLerpSpeed: 8
-  edgeBlurGroup: {fileID: 0}
-  maxBlurAlpha: 0.75
-  blurLerpSpeed: 8
+  activeBlurStrength: 1
+  blurLerpSpeed: 32
+  effectSpeedThreshold: 130
 --- !u!4 &2117801093
 Transform:
   m_ObjectHideFlags: 0

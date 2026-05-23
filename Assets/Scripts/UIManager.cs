@@ -6,16 +6,22 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Camera targetCamera;
     [SerializeField] private PlayerController playerController;
     [SerializeField] private GearManager gearManager;
+    [SerializeField] private Material edgeBlurMaterial;
 
-    [Header("FOV Effect")]
-    [SerializeField] private float normalFov = 60f;
+    [Header("FOV")]
     [SerializeField] private float ropeFov = 75f;
-    [SerializeField] private float fovLerpSpeed = 8f;
+    [SerializeField] public float fovLerpSpeed = 8f;
 
-    [Header("Edge Blur UI")]
-    [SerializeField] private CanvasGroup edgeBlurGroup;
-    [SerializeField] private float maxBlurAlpha = 0.75f;
+    [Header("Blur")]
+    [SerializeField] private float activeBlurStrength = 1f;
     [SerializeField] private float blurLerpSpeed = 8f;
+    [SerializeField] private float effectSpeedThreshold = 18f;
+
+    private float normalFov;
+    private float currentBlurStrength;
+
+    private static readonly int BlurStrengthID =
+        Shader.PropertyToID("_BlurStrength");
 
     private void Awake()
     {
@@ -25,33 +31,21 @@ public class UIManager : MonoBehaviour
         if (targetCamera != null)
             normalFov = targetCamera.fieldOfView;
 
-        if (edgeBlurGroup != null)
-            edgeBlurGroup.alpha = 0f;
+        if (edgeBlurMaterial != null)
+            edgeBlurMaterial.SetFloat(BlurStrengthID, 0f);
     }
 
     private void Update()
     {
-        bool shouldShowEffect = ShouldShowRopeMovementEffect();
+        bool active =
+            gearManager != null &&
+            playerController.Rigidbody.linearVelocity.magnitude >= effectSpeedThreshold;
 
-        UpdateCameraFov(shouldShowEffect);
-        UpdateEdgeBlur(shouldShowEffect);
+        UpdateFov(active);
+        UpdateBlur(active);
     }
 
-    private bool ShouldShowRopeMovementEffect()
-    {
-        if (playerController == null || gearManager == null)
-            return false;
-
-        if (!gearManager.IsAnchorAttached)
-            return false;
-
-        bool isPullingToAnchor = !playerController.IsRopeLengthLockHeld;
-        bool isMovingWithAnchor = playerController.HasMoveInput;
-
-        return isPullingToAnchor || isMovingWithAnchor;
-    }
-
-    private void UpdateCameraFov(bool active)
+    private void UpdateFov(bool active)
     {
         if (targetCamera == null)
             return;
@@ -65,17 +59,19 @@ public class UIManager : MonoBehaviour
         );
     }
 
-    private void UpdateEdgeBlur(bool active)
+    private void UpdateBlur(bool active)
     {
-        if (edgeBlurGroup == null)
+        if (edgeBlurMaterial == null)
             return;
 
-        float targetAlpha = active ? maxBlurAlpha : 0f;
+        float targetBlur = active ? activeBlurStrength : 0f;
 
-        edgeBlurGroup.alpha = Mathf.Lerp(
-            edgeBlurGroup.alpha,
-            targetAlpha,
+        currentBlurStrength = Mathf.Lerp(
+            currentBlurStrength,
+            targetBlur,
             Time.deltaTime * blurLerpSpeed
         );
+
+        edgeBlurMaterial.SetFloat(BlurStrengthID, currentBlurStrength);
     }
 }
