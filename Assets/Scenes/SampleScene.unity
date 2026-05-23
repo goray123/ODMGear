@@ -2934,6 +2934,37 @@ MonoBehaviour:
   slowMotionVignette: 0.3
   slowMotionSensitivityMultiplier: 0.5
   slowMotionSlider: {fileID: 637858839}
+--- !u!1 &345003987
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 345003988}
+  m_Layer: 0
+  m_Name: Map
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &345003988
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 345003987}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 237.557, y: 308.73444, z: -118.05661}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &365865690
 GameObject:
   m_ObjectHideFlags: 0
@@ -3526,6 +3557,7 @@ GameObject:
   - component: {fileID: 437883692}
   - component: {fileID: 437883691}
   - component: {fileID: 437883693}
+  - component: {fileID: 437883694}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -3592,6 +3624,21 @@ MonoBehaviour:
   nearColor: {r: 1, g: 0, b: 0, a: 1}
   farColor: {r: 1, g: 1, b: 1, a: 1}
   enemyTag: Enemy
+--- !u!114 &437883694
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 437883690}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 583560d1127e753439ce976bcc21123e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StartFloor
+  playerController: {fileID: 611192673}
+  floorObject: {fileID: 658186380}
+  floorOffset: {x: 0, y: -3, z: 0}
 --- !u!1 &475055575
 GameObject:
   m_ObjectHideFlags: 0
@@ -13612,3 +13659,4 @@ SceneRoots:
   - {fileID: 1904576734}
   - {fileID: 2001517983}
   - {fileID: 437883692}
+  - {fileID: 345003988}

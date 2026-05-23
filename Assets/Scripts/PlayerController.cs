@@ -62,6 +62,13 @@ public class PlayerController : MonoBehaviour
         set => mouseSensitivity = value;
     }
 
+    // 필드에 추가
+    public event System.Action OnFirstGearFired;
+    private bool hasEverFiredGear;
+
+    // 필드에 추가
+    public event System.Action OnPlayerRespawned;
+
     private void Awake()
     {
         rigid = GetComponent<Rigidbody>();
@@ -183,6 +190,13 @@ public class PlayerController : MonoBehaviour
         if (gearManager == null)
             return;
 
+        // 최초 발사 시 이벤트 발생
+        if (!hasEverFiredGear)
+        {
+            hasEverFiredGear = true;
+            OnFirstGearFired?.Invoke();
+        }
+
         gearManager.FireGear(slot, FireOrigin, FireDirection, this);
     }
 
@@ -190,6 +204,17 @@ public class PlayerController : MonoBehaviour
     {
         if (gearManager != null)
             gearManager.ReleaseGear(slot);
+    }
+
+    public void Respawn(Vector3 position)
+    {
+        rigid.linearVelocity = Vector3.zero;
+        rigid.angularVelocity = Vector3.zero;
+        transform.position = position;
+
+        hasEverFiredGear = false; // 앵커 발사 전 상태로 초기화
+
+        OnPlayerRespawned?.Invoke();
     }
 
     public void SetActionLock(bool locked, bool allowLook)
