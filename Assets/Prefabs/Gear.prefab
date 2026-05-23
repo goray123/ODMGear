@@ -126,8 +126,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae171019898154846ae8a7f60214b06f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Gear
-  speed: 800
-  pullForce: 5
+  speed: 1600
+  pullForce: 7
   attachMask:
     serializedVersion: 2
     m_Bits: 4294967295

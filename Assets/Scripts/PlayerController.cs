@@ -76,8 +76,13 @@ public class PlayerController : MonoBehaviour
 
         rigid.freezeRotation = true;
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        // 게임 시작 버튼을 누르기 전까지 액션 잠금
+        // 카메라는 고정 전이라 룩도 잠금
+        actionLocked = true;
+        lookLocked = true;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     private void Update()

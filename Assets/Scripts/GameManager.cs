@@ -71,6 +71,9 @@ public class GameManager : MonoBehaviour
 
     private const string BestScoreKey = "BestKillCount";
 
+    [Header("Start Button")]
+    [SerializeField] private GameObject startButtonObject; // 시작 버튼 UI 루트
+
     // ─────────────────────────────────────
     // Lifecycle
     // ─────────────────────────────────────
@@ -91,6 +94,21 @@ public class GameManager : MonoBehaviour
         // 씬 로딩 시 적 위치 랜덤 배치
         ScatterEnemiesOnLoad();
     }
+
+    public void OnStartButtonClicked()
+    {
+        if (startButtonObject != null)
+            startButtonObject.SetActive(false);
+
+        // 마우스 고정
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        // 플레이어 액션 잠금 해제
+        if (playerController != null)
+            playerController.SetActionLock(false, false);
+    }
+
 
     private void ScatterEnemiesOnLoad()
     {
