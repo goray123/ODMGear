@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -46,6 +47,31 @@ public class GameManager : MonoBehaviour
     public event System.Action<int> OnGameOver;
 
     // ─────────────────────────────────────
+    // Player Death
+    // ─────────────────────────────────────
+
+    [Header("Player Death")]
+    [SerializeField] private PlayerController playerController;
+    [SerializeField] private float deathYThreshold = -10f;
+    [SerializeField] private float deathTimePenalty = 10f;
+    [SerializeField] private Vector3 respawnPosition = new Vector3(0f, 2f, 0f);
+
+    private bool isDead;
+
+    // ─────────────────────────────────────
+    // Game End UI
+    // ─────────────────────────────────────
+
+    [Header("Game End UI")]
+    [SerializeField] private GameObject gameEndObject;
+    [SerializeField] private TextMeshProUGUI finalKillText;
+    [SerializeField] private TextMeshProUGUI myBestText;
+    [SerializeField] private string finalKillFormat = "{0} Kills";
+    [SerializeField] private string myBestFormat = "My Best : {0}";
+
+    private const string BestScoreKey = "BestKillCount";
+
+    // ─────────────────────────────────────
     // Lifecycle
     // ─────────────────────────────────────
 
@@ -58,13 +84,44 @@ public class GameManager : MonoBehaviour
         }
 
         Instance = this;
+
+        if (playerController == null)
+            playerController = FindFirstObjectByType<PlayerController>();
+
+        // 씬 로딩 시 적 위치 랜덤 배치
+        ScatterEnemiesOnLoad();
     }
 
+    private void ScatterEnemiesOnLoad()
+    {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        foreach (GameObject enemy in enemies)
+        {
+            Vector3 spawnPos = GetValidRespawnPosition();
+            enemy.transform.position = spawnPos;
+        }
+    }
+
+    private void Start()
+    {
+        if (gameEndObject != null)
+            gameEndObject.SetActive(false);
+    }
 
     private void Update()
     {
+        // 언제든 L키로 재시작
+        if (UnityEngine.InputSystem.Keyboard.current != null &&
+            UnityEngine.InputSystem.Keyboard.current.lKey.wasPressedThisFrame)
+        {
+            RestartGame();
+            return;
+        }
+
         if (!isGameRunning)
             return;
+
+        CheckPlayerFall();
 
         timeRemaining -= Time.deltaTime;
 
@@ -88,14 +145,17 @@ public class GameManager : MonoBehaviour
         killCount = 0;
         timeRemaining = gameDuration;
         isGameRunning = true;
+        isDead = false;
 
-        // Slider 초기화: 최대값을 gameDuration으로 설정
         if (timerSlider != null)
         {
             timerSlider.minValue = 0f;
             timerSlider.maxValue = gameDuration;
             timerSlider.value = gameDuration;
         }
+
+        if (gameEndObject != null)
+            gameEndObject.SetActive(false);
 
         UpdateKillCountUI();
     }
@@ -104,13 +164,75 @@ public class GameManager : MonoBehaviour
     {
         isGameRunning = false;
 
+        // 모든 적 비활성화
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
         foreach (GameObject enemy in enemies)
             enemy.SetActive(false);
 
+        // 최고 기록 갱신
+        int prevBest = PlayerPrefs.GetInt(BestScoreKey, 0);
+        if (killCount > prevBest)
+        {
+            PlayerPrefs.SetInt(BestScoreKey, killCount);
+            PlayerPrefs.Save();
+        }
+
+        ShowGameEndUI();
         OnGameOver?.Invoke(killCount);
 
         Debug.Log($"[GameManager] 게임 종료 — 최종 킬 수: {killCount}");
+    }
+
+    private void RestartGame()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    // ─────────────────────────────────────
+    // Game End UI
+    // ─────────────────────────────────────
+
+    private void ShowGameEndUI()
+    {
+        if (gameEndObject != null)
+            gameEndObject.SetActive(true);
+
+        if (finalKillText != null)
+            finalKillText.text = string.Format(finalKillFormat, killCount);
+
+        int best = PlayerPrefs.GetInt(BestScoreKey, 0);
+        if (myBestText != null)
+            myBestText.text = string.Format(myBestFormat, best);
+    }
+
+    // ─────────────────────────────────────
+    // Player Death & Respawn
+    // ─────────────────────────────────────
+
+    private void CheckPlayerFall()
+    {
+        if (isDead)
+            return;
+
+        if (playerController == null)
+            return;
+
+        if (playerController.transform.position.y > deathYThreshold)
+            return;
+
+        HandlePlayerDeath();
+    }
+
+    private void HandlePlayerDeath()
+    {
+        isDead = true;
+
+        timeRemaining = Mathf.Max(0f, timeRemaining - deathTimePenalty);
+        UpdateTimerUI();
+
+        playerController.Respawn(respawnPosition);
+
+        isDead = false;
     }
 
     // ─────────────────────────────────────
@@ -137,7 +259,8 @@ public class GameManager : MonoBehaviour
     {
         if (!isGameRunning)
         {
-            enemy.SetActive(false);
+            // 게임 시작 전이라도 적은 랜덤 위치에 리스폰
+            RespawnEnemy(enemy);
             return;
         }
 
@@ -150,8 +273,8 @@ public class GameManager : MonoBehaviour
 
     private void RespawnEnemy(GameObject enemy)
     {
-        Vector3 respawnPosition = GetValidRespawnPosition();
-        enemy.transform.position = respawnPosition;
+        Vector3 spawnPos = GetValidRespawnPosition();
+        enemy.transform.position = spawnPos;
         enemy.SetActive(true);
     }
 
@@ -199,5 +322,11 @@ public class GameManager : MonoBehaviour
 
         Gizmos.color = new Color(0f, 1f, 0.5f, 0.8f);
         Gizmos.DrawWireCube(center, size);
+
+        Gizmos.color = new Color(1f, 0.2f, 0.2f, 0.8f);
+        Gizmos.DrawLine(
+            new Vector3(-1000f, deathYThreshold, 0f),
+            new Vector3(1000f, deathYThreshold, 0f)
+        );
     }
 }
