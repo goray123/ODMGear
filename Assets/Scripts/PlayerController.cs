@@ -43,7 +43,12 @@ public class PlayerController : MonoBehaviour
     private bool lookLocked;
 
     public Rigidbody Rigidbody => rigid;
-    public bool IsRopeLengthLockHeld => jumpHeld;
+    public bool IsRopeLengthLockHeld =>
+    jumpHeld ||
+    (!isGrounded
+     && gearManager != null
+     && gearManager.IsAnchorAttached
+     && moveInput.sqrMagnitude > 0.01f);
     public bool CanUseRopeLengthLock => gearManager != null && gearManager.AnchoredGearCount == 1;
     public bool HasMoveInput => moveInput.sqrMagnitude > 0.01f;
     public Vector3 FireOrigin => transform.position + Vector3.up * fireOriginHeight;
@@ -52,6 +57,19 @@ public class PlayerController : MonoBehaviour
     private float pitch;
     private bool isGrounded;
 
+    public float MouseSensitivity
+    {
+        get => mouseSensitivity;
+        set => mouseSensitivity = value;
+    }
+
+    // 필드에 추가
+    public event System.Action OnFirstGearFired;
+    private bool hasEverFiredGear;
+
+    // 필드에 추가
+    public event System.Action OnPlayerRespawned;
+
     private void Awake()
     {
         rigid = GetComponent<Rigidbody>();
@@ -59,8 +77,13 @@ public class PlayerController : MonoBehaviour
 
         rigid.freezeRotation = true;
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        // 게임 시작 버튼을 누르기 전까지 액션 잠금
+        // 카메라는 고정 전이라 룩도 잠금
+        actionLocked = true;
+        lookLocked = true;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     private void Update()
@@ -173,6 +196,13 @@ public class PlayerController : MonoBehaviour
         if (gearManager == null)
             return;
 
+        // 최초 발사 시 이벤트 발생
+        if (!hasEverFiredGear)
+        {
+            hasEverFiredGear = true;
+            OnFirstGearFired?.Invoke();
+        }
+
         gearManager.FireGear(slot, FireOrigin, FireDirection, this);
     }
 
@@ -182,23 +212,58 @@ public class PlayerController : MonoBehaviour
             gearManager.ReleaseGear(slot);
     }
 
-    public void SetActionLock(bool locked, bool allowLook)
+    public void Respawn(Vector3 position)
     {
-        actionLocked = locked;
-        lookLocked = locked && !allowLook;
+        rigid.linearVelocity = Vector3.zero;
+        rigid.angularVelocity = Vector3.zero;
+        transform.position = position;
 
-        if (!locked)
-            return;
+        hasEverFiredGear = false; // 앵커 발사 전 상태로 초기화
 
-        moveInput = Vector2.zero;
-        jumpHeld = false;
-
-        if (gearManager != null)
-            gearManager.ReleaseGear();
-
-        leftGearHeld = false;
-        rightGearHeld = false;
+        OnPlayerRespawned?.Invoke();
     }
+
+    public void SetActionLock(bool locked, bool allowLook)
+{
+    actionLocked = locked;
+    lookLocked = locked && !allowLook;
+
+    if (!locked)
+    {
+        // 현재 키 상태를 즉시 반영
+        Vector2 restoredInput = Vector2.zero;
+
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.wKey.isPressed)
+                restoredInput.y += 1f;
+
+            if (Keyboard.current.sKey.isPressed)
+                restoredInput.y -= 1f;
+
+            if (Keyboard.current.dKey.isPressed)
+                restoredInput.x += 1f;
+
+            if (Keyboard.current.aKey.isPressed)
+                restoredInput.x -= 1f;
+        }
+
+        moveInput = restoredInput.normalized;
+        jumpHeld = Keyboard.current != null &&
+           Keyboard.current.spaceKey.isPressed;
+
+        return;
+    }
+
+    moveInput = Vector2.zero;
+    jumpHeld = false;
+
+    if (gearManager != null)
+        gearManager.ReleaseGear();
+
+    leftGearHeld = false;
+    rightGearHeld = false;
+}
 
     // =========================
     // Movement
@@ -227,8 +292,14 @@ public class PlayerController : MonoBehaviour
     private bool CanApplyDirectionalMovement()
     {
         bool isGroundMovement = isGrounded;
-        bool isAnchorMovement = gearManager != null && gearManager.IsAnchorAttached && jumpHeld;
-        bool isAirMovementWithoutAnchor = !isGrounded && (gearManager == null || !gearManager.IsAnchorAttached);
+
+        // 앵커 연결 + 공중이면 스페이스 없이도 이동 가능 (스윙 모드 자동 진입)
+        bool isAnchorMovement = gearManager != null
+            && gearManager.IsAnchorAttached
+            && !isGrounded;
+
+        bool isAirMovementWithoutAnchor = !isGrounded
+            && (gearManager == null || !gearManager.IsAnchorAttached);
 
         return isGroundMovement || isAnchorMovement || isAirMovementWithoutAnchor;
     }
